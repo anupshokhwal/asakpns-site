@@ -1,0 +1,8 @@
+{
+  // Cloudflare Worker that serves the static website in ./public
+  "name": "asakpns",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public"
+  }
+}
