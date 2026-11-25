@@ -11,3 +11,5 @@ Every push to `main` deploys automatically once Cloudflare is connected to this 
 - `public/favicon.svg`: browser-tab icon
 - `public/sitemap.xml`, `public/robots.txt`: for search engines
 - `wrangler.jsonc`: Cloudflare config (Worker name and the folder to publish)
+
+Deployed automatically by Cloudflare Workers Builds on every push to `main`.
