@@ -134,8 +134,10 @@ h2 { font-size: 30px; margin: 0 0 12px; line-height: 1.2; }
 
 /* Values */
 .values .card { display: flex; flex-direction: column; gap: 6px; }
-.dot { width: 14px; height: 14px; border-radius: 50%; background: var(--deep); margin-bottom: 8px; }
+.dot { width: 18px; height: 18px; border-radius: 50%; background: var(--deep); margin-bottom: 8px; }
 .dot.trust { background: var(--yellow); box-shadow: 0 0 0 3px var(--blue); }
+.dot.transparency { background: var(--blue); }
+.dot.security { background: var(--deep); }
 
 .points { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
 .points li { padding-left: 28px; position: relative; color: var(--ink-soft); }
