@@ -203,3 +203,55 @@ footer.site a:hover { color: var(--yellow); }
   .brand svg { width: 36px; height: 36px; }
   nav.main { gap: 18px; }
 }
+
+/* ---------- Motion ---------- */
+
+/* Smooth interactions */
+.btn, .btn.secondary { transition: background-color .25s ease, color .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(10, 75, 247, 0.22); }
+.btn.secondary:hover { box-shadow: 0 8px 20px rgba(11, 42, 107, 0.10); }
+.card { transition: transform .35s ease, box-shadow .35s ease, opacity .7s ease; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(11, 42, 107, 0.10); }
+.values .card.value:hover { box-shadow: 0 16px 36px rgba(11, 42, 107, 0.22); }
+nav.main a { position: relative; transition: color .2s ease; }
+nav.main a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px;
+  background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform .25s ease;
+}
+nav.main a:hover::after { transform: scaleX(1); }
+header.site { transition: box-shadow .3s ease; }
+
+/* Logo assembles on load: line draws, then nodes appear one by one */
+.logo-mark .tri-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .9s ease forwards .15s; }
+.logo-mark .node { transform-box: fill-box; transform-origin: center; transform: scale(0); animation: pop .45s cubic-bezier(.34, 1.56, .64, 1) forwards; }
+.logo-mark .n1 { animation-delay: .75s; }
+.logo-mark .n2 { animation-delay: .95s; }
+.logo-mark .n3 { animation-delay: 1.15s; }
+.brand:hover .logo-mark .n1 { animation: pulse 1s ease; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes pop { to { transform: scale(1); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+
+/* Hero text fades up on load */
+.intro { opacity: 0; transform: translateY(16px); animation: rise .8s ease forwards; }
+.i1 { animation-delay: .2s; }
+.i2 { animation-delay: .35s; }
+.i3 { animation-delay: .5s; }
+.i4 { animation-delay: .65s; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+/* Sections slide into view on scroll (only when JavaScript is running) */
+.js .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+.js .reveal.in { opacity: 1; transform: none; }
+.js .card.reveal.in:hover { transform: translateY(-4px); }
+
+/* Respect visitors who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .logo-mark .tri-line { stroke-dashoffset: 0; }
+  .logo-mark .node { transform: none; }
+  .intro, .js .reveal { opacity: 1; transform: none; }
+}
+
+/* Keep headings visible below the sticky header when using menu links */
+section[id] { scroll-margin-top: 84px; }
