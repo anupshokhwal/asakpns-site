@@ -27,24 +27,33 @@ function cleanText(value, max) {
     .slice(0, max);
 }
 
+// Returns { ok, reason }. The reason is a short, non-secret code shown to the
+// visitor and logged, so a failed check can be diagnosed.
 async function verifyTurnstile(env, token, ip) {
   const allowed = new Set(String(env.TURNSTILE_HOSTNAMES ?? '').split(',').map((h) => h.trim()).filter(Boolean));
-  if (typeof token !== 'string' || token.length === 0 || token.length > 2048 || allowed.size === 0 || !env.TURNSTILE_SECRET) {
-    return false;
-  }
+  if (!env.TURNSTILE_SECRET) return { ok: false, reason: 'server-secret-missing' };
+  if (allowed.size === 0) return { ok: false, reason: 'server-hostnames-missing' };
+  if (typeof token !== 'string' || token.length === 0 || token.length > 2048) return { ok: false, reason: 'no-token' };
+  let result;
   try {
     const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       signal: AbortSignal.timeout(10_000),
-      body: new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: token, remoteip: ip ?? '' }),
+      body: new URLSearchParams({ secret: String(env.TURNSTILE_SECRET).trim(), response: token, remoteip: ip ?? '' }),
     });
-    if (!r.ok) return false;
-    const result = await r.json();
-    return result.success === true && result.action === EXPECTED_ACTION && allowed.has(result.hostname);
+    if (!r.ok) return { ok: false, reason: `siteverify-http-${r.status}` };
+    result = await r.json();
   } catch {
-    return false; // fail closed
+    return { ok: false, reason: 'siteverify-unreachable' }; // fail closed
   }
+  if (result.success !== true) {
+    const codes = Array.isArray(result['error-codes']) ? result['error-codes'].join(',') : 'unknown';
+    return { ok: false, reason: codes || 'not-success' };
+  }
+  if (result.action !== EXPECTED_ACTION) return { ok: false, reason: `action-${result.action || 'none'}` };
+  if (!allowed.has(result.hostname)) return { ok: false, reason: `hostname-${result.hostname || 'none'}` };
+  return { ok: true, reason: '' };
 }
 
 async function handleContact(request, env) {
@@ -59,8 +68,10 @@ async function handleContact(request, env) {
   if (cleanLine(form.get('website'), 200)) return json(200, { ok: true });
 
   const ip = request.headers.get('CF-Connecting-IP');
-  if (!(await verifyTurnstile(env, form.get('cf-turnstile-response'), ip))) {
-    return json(403, { ok: false, error: 'We could not confirm you are human. Please try again.' });
+  const check = await verifyTurnstile(env, form.get('cf-turnstile-response'), ip);
+  if (!check.ok) {
+    console.warn('turnstile check failed:', check.reason);
+    return json(403, { ok: false, error: `We could not confirm you are human. Please try again. (code: ${check.reason})` });
   }
 
   const data = {
