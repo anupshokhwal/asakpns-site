@@ -320,3 +320,8 @@ h1, h2, h3, .brand { font-family: var(--font-head); }
 h1, h2 { font-weight: 700; letter-spacing: -0.005em; }
 h3 { font-weight: 600; }
 .brand { font-weight: 700; letter-spacing: 0.07em; }
+
+/* Story section: paragraphs sit closer together than a single lead */
+.story .lead { margin-bottom: 16px; }
+.story .lead + .points { margin-top: 28px; }
+.story .points strong { color: var(--ink); }
