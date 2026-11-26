@@ -1,8 +1,21 @@
 {
-  // Cloudflare Worker that serves the static website in ./public
+  // Cloudflare Worker: serves the website in ./public and handles the
+  // contact form at /api/contact (src/index.js).
   "name": "asakpns",
+  "main": "src/index.js",
   "compatibility_date": "2026-11-01",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // Not secret. Secrets (TURNSTILE_SECRET, SMTP_PASSWORD) are set in the
+  // Cloudflare dashboard under Settings -> Variables and Secrets.
+  "vars": {
+    "TURNSTILE_HOSTNAMES": "asakpns.com,www.asakpns.com",
+    "SMTP_HOST": "smtp.migadu.com",
+    "SMTP_PORT": "465",
+    "SMTP_USER": "hello@asakpns.com",
+    "CONTACT_TO": "hello@asakpns.com"
   }
 }

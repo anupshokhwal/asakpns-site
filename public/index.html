@@ -140,18 +140,66 @@
     <div class="wrap">
       <h2 class="reveal">Contact us</h2>
       <p class="lead reveal">Tell us about your project and we will get back to you within two working days.</p>
-      <div class="contact-grid">
-        <div class="card reveal">
-          <div class="label">Email</div>
-          <p><a href="mailto:hello@asakpns.com">hello@asakpns.com</a></p>
-        </div>
-        <div class="card reveal">
-          <div class="label">Headquarters</div>
-          <p>Pune, India<br>Working with clients worldwide</p>
-        </div>
-        <div class="card reveal">
-          <div class="label">Time zone</div>
-          <p>India Standard Time (UTC+5:30)<br>Meetings arranged to suit yours</p>
+      <div class="contact-layout">
+        <form class="card contact-form reveal" id="contact-form" novalidate>
+          <div class="form-row">
+            <div class="field">
+              <label for="cf-name">Name <span class="req" aria-hidden="true">*</span></label>
+              <input id="cf-name" name="name" type="text" autocomplete="name" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="cf-email">Email <span class="req" aria-hidden="true">*</span></label>
+              <input id="cf-email" name="email" type="email" autocomplete="email" maxlength="254" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="cf-company">Company or organisation <span class="opt">(optional)</span></label>
+              <input id="cf-company" name="company" type="text" autocomplete="organization" maxlength="120">
+            </div>
+            <div class="field">
+              <label for="cf-country">Country <span class="opt">(optional)</span></label>
+              <input id="cf-country" name="country" type="text" autocomplete="country-name" maxlength="100">
+            </div>
+          </div>
+          <div class="field">
+            <label for="cf-timeline">Timeline <span class="opt">(optional)</span></label>
+            <select id="cf-timeline" name="timeline">
+              <option value="">Not sure yet</option>
+              <option>As soon as possible</option>
+              <option>Within 3 months</option>
+              <option>In 3 to 6 months</option>
+              <option>Later than 6 months</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cf-message">What would you like to build or solve? <span class="req" aria-hidden="true">*</span></label>
+            <textarea id="cf-message" name="message" rows="5" maxlength="5000" required></textarea>
+          </div>
+          <div class="hp" aria-hidden="true">
+            <label for="cf-website">Leave this field empty</label>
+            <input id="cf-website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+          <div id="cf-turnstile" class="turnstile"></div>
+          <div class="form-foot">
+            <button class="btn" type="submit" id="cf-submit">Send message</button>
+            <p class="form-note">We only use these details to reply to you. <a href="privacy.html">Privacy policy</a></p>
+          </div>
+          <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
+        </form>
+        <div class="contact-side">
+          <div class="card reveal">
+            <div class="label">Prefer email?</div>
+            <p><a href="mailto:hello@asakpns.com">hello@asakpns.com</a></p>
+          </div>
+          <div class="card reveal">
+            <div class="label">Headquarters</div>
+            <p>Pune, India<br>Working with clients worldwide</p>
+          </div>
+          <div class="card reveal">
+            <div class="label">Time zone</div>
+            <p>India Standard Time (UTC+5:30)<br>Meetings arranged to suit yours</p>
+          </div>
         </div>
       </div>
     </div>
@@ -204,5 +252,65 @@ document.getElementById('yr').textContent = new Date().getFullYear();
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
 })();
 </script>
+<script>
+(function () {
+  var form = document.getElementById('contact-form');
+  if (!form) return;
+  var statusEl = document.getElementById('cf-status');
+  var button = document.getElementById('cf-submit');
+  var widgetId = null;
+
+  window.onTurnstileLoad = function () {
+    widgetId = window.turnstile.render('#cf-turnstile', {
+      sitekey: '0x4AAAAAAGUT5JNBjMDSk1zp',
+      action: 'contact',
+      theme: 'light'
+    });
+  };
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'form-status' + (kind ? ' ' + kind : '');
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    var token = window.turnstile && widgetId !== null ? window.turnstile.getResponse(widgetId) : '';
+    if (!token) {
+      setStatus('Please wait a moment while we check you are human, then try again.', 'error');
+      return;
+    }
+    button.disabled = true;
+    button.textContent = 'Sending...';
+    setStatus('', '');
+    fetch('/api/contact', { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+      .then(function (res) {
+        if (res && res.ok) {
+          form.reset();
+          form.classList.add('sent');
+          setStatus('Thank you. Your message has reached us, and we will reply within two working days.', 'success');
+          button.textContent = 'Message sent';
+          return;
+        }
+        setStatus((res && res.error) || 'Sorry, something went wrong. Please email hello@asakpns.com instead.', 'error');
+        button.disabled = false;
+        button.textContent = 'Send message';
+        if (window.turnstile && widgetId !== null) window.turnstile.reset(widgetId);
+      })
+      .catch(function () {
+        setStatus('Sorry, your message could not be sent. Please check your connection or email hello@asakpns.com.', 'error');
+        button.disabled = false;
+        button.textContent = 'Send message';
+        if (window.turnstile && widgetId !== null) window.turnstile.reset(widgetId);
+      });
+  });
+})();
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=onTurnstileLoad" async defer></script>
 </body>
 </html>
