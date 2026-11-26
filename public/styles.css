@@ -57,7 +57,7 @@ header.site .wrap {
   text-decoration: none;
 }
 .brand:hover { color: var(--ink); }
-.brand svg { width: 44px; height: 44px; flex-shrink: 0; }
+.brand svg { width: 44px; height: 44px; flex-shrink: 0; overflow: visible; }
 nav.main { display: flex; gap: 28px; flex-wrap: wrap; }
 nav.main a {
   color: var(--ink-soft);
@@ -255,16 +255,40 @@ nav.main a::after {
 nav.main a:hover::after { transform: scaleX(1); }
 header.site { transition: box-shadow .3s ease; }
 
-/* Logo assembles on load: line draws, then nodes appear one by one */
-.logo-mark .tri-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .9s ease forwards .15s; }
-.logo-mark .node { transform-box: fill-box; transform-origin: center; transform: scale(0); animation: pop .45s cubic-bezier(.34, 1.56, .64, 1) forwards; }
-.logo-mark .n1 { animation-delay: .75s; }
-.logo-mark .n2 { animation-delay: .95s; }
-.logo-mark .n3 { animation-delay: 1.15s; }
-.brand:hover .logo-mark .n1 { animation: pulse 1s ease; }
+/* Logo intro: the dots fall like rubber balls, the yellow one bounces up to the peak
+   with a line following it on each side, the base joins them, then the name sweeps in */
+.logo-mark .seg { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.logo-mark .node { transform-box: fill-box; transform-origin: 50% 100%; }
+.logo-mark .n2, .logo-mark .n3 { opacity: 0; transform: translateY(-58px); animation: ball-blue .8s forwards .1s; }
+.logo-mark .n1 { opacity: 0; transform: translateY(-20px); animation: ball-yellow 1.9s forwards .1s; }
+.logo-mark .seg-l, .logo-mark .seg-r { animation: draw .32s cubic-bezier(.2,.8,.3,1) forwards .72s; }
+.logo-mark .seg-b { animation: draw .4s ease-in-out forwards 1.6s; }
+.brand-name { display: inline-block; clip-path: inset(0 100% 0 0); transform: translateX(-14px); animation: sweep .7s cubic-bezier(.22,1,.36,1) forwards 2s; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
-@keyframes pop { to { transform: scale(1); } }
-@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+@keyframes sweep { to { clip-path: inset(0 0 0 0); transform: none; } }
+@keyframes ball-blue {
+  0%   { opacity: 0; transform: translateY(-58px) scale(.92, 1.1); animation-timing-function: cubic-bezier(.5, 0, 1, 1); }
+  57%  { opacity: 1; transform: translateY(0) scale(.92, 1.1); }
+  63%  { transform: translateY(0) scale(1.3, .72); }
+  69%  { transform: translateY(-1px) scale(.94, 1.08); animation-timing-function: cubic-bezier(0, 0, .5, 1); }
+  78%  { transform: translateY(-5px) scale(1); animation-timing-function: cubic-bezier(.5, 0, 1, 1); }
+  87%  { transform: translateY(0) scale(1.08, .93); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes ball-yellow {
+  0%   { opacity: 0; transform: translateY(-20px) scale(.92, 1.1); animation-timing-function: cubic-bezier(.5, 0, 1, 1); }
+  24%  { opacity: 1; transform: translateY(38px) scale(.9, 1.12); }
+  28%  { transform: translateY(38px) scale(1.38, .64); }
+  32%  { transform: translateY(32px) scale(.82, 1.25); animation-timing-function: cubic-bezier(0, 0, .45, 1); }
+  58%  { transform: translateY(-24px) scale(1); animation-timing-function: cubic-bezier(.55, 0, 1, 1); }
+  72%  { transform: translateY(0) scale(.92, 1.1); }
+  75%  { transform: translateY(0) scale(1.22, .8); }
+  78%  { transform: translateY(-1px) scale(.95, 1.06); animation-timing-function: cubic-bezier(0, 0, .5, 1); }
+  85%  { transform: translateY(-9px) scale(1); animation-timing-function: cubic-bezier(.5, 0, 1, 1); }
+  91%  { transform: translateY(0) scale(1.1, .9); }
+  95%  { transform: translateY(-2px) scale(1); }
+  100% { opacity: 1; transform: none; }
+}
 
 /* Hero text fades up on load */
 .intro { opacity: 0; transform: translateY(16px); animation: rise .8s ease forwards; }
@@ -282,8 +306,9 @@ header.site { transition: box-shadow .3s ease; }
 /* Respect visitors who ask for less motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  .logo-mark .tri-line { stroke-dashoffset: 0; }
-  .logo-mark .node { transform: none; }
+  .logo-mark .seg { stroke-dashoffset: 0; }
+  .logo-mark .node { opacity: 1; transform: none; }
+  .brand-name { clip-path: none; transform: none; }
   .intro, .js .reveal { opacity: 1; transform: none; }
 }
 
@@ -295,18 +320,3 @@ h1, h2, h3, .brand { font-family: var(--font-head); }
 h1, h2 { font-weight: 700; letter-spacing: -0.005em; }
 h3 { font-weight: 600; }
 .brand { font-weight: 700; letter-spacing: 0.07em; }
-
-
-/* Name slides out of the triangle, letter by letter, after the logo assembles */
-.brand-name { display: inline-flex; overflow: hidden; padding: 2px 4px 2px 0; }
-.brand-name span {
-  display: inline-block;
-  opacity: 0;
-  transform: translateX(-120%);
-  animation: letter-out .55s cubic-bezier(.22, 1, .36, 1) forwards;
-  animation-delay: calc(1.2s + var(--i) * 0.07s);
-}
-@keyframes letter-out { to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .brand-name span { opacity: 1; transform: none; }
-}
