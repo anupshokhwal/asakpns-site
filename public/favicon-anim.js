@@ -1,5 +1,5 @@
 /* Plays the logo intro in the browser tab icon, in sync with the header logo.
-   Each frame reads the live state of the header logo (dot positions, squash,
+   Each key pose reads the live state of the header logo (dot positions, squash,
    how much of each line is drawn) and redraws it on a small canvas.
    Works in Chrome, Edge and Firefox; Safari keeps the static icon.
    Skipped entirely for visitors who prefer reduced motion. */
@@ -96,16 +96,24 @@
     link.setAttribute('href', canvas.toDataURL('image/png'));
   }
 
+  // Browsers only refresh a tab icon a few times a second, so instead of a
+  // continuous animation we show a handful of key poses, stop-motion style,
+  // each read from the header logo at that moment so the two stay in step.
+  var poses = [300, 560, 820, 1080, 1450, 1800, 2100]; // ms after the page starts
+  var END = 2350;
   var start = performance.now();
-  var DURATION = 2300; // the logo has fully formed by now
-  var last = 0;
+  var next = 0;
   function tick(now) {
-    if (now - start > DURATION) {
+    var t = now - start;
+    if (t >= END) {
       link.setAttribute('href', staticHref);
       if (staticType) link.setAttribute('type', staticType);
       return;
     }
-    if (now - last > 45) { draw(); last = now; } // about 20 frames a second is plenty for a tab icon
+    if (next < poses.length && t >= poses[next]) {
+      draw();
+      while (next < poses.length && t >= poses[next]) next++;
+    }
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
