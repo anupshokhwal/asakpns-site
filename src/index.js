@@ -56,7 +56,7 @@ async function verifyTurnstile(env, token, ip) {
   return { ok: true, reason: '' };
 }
 
-async function handleContact(request, env) {
+async function handleContact(request, env, ctx) {
   let form;
   try {
     form = await request.formData();
@@ -134,15 +134,72 @@ async function handleContact(request, env) {
     return json(502, { ok: false, error: 'Sorry, your message could not be sent. Please email hello@asakpns.com instead.' });
   }
 
+  // Thank-you email to the visitor. Fixed wording only (nothing they typed is
+  // echoed back), so the form cannot be used to send spam to other people.
+  // Sent after the response; a failure here does not affect the enquiry.
+  ctx.waitUntil(sendConfirmation(env, data.email).catch((err) => {
+    console.error('confirmation email failed:', err && err.message);
+  }));
+
   return json(200, { ok: true });
 }
 
+const CONFIRM_TEXT = [
+  'Hi,',
+  '',
+  'Thanks for getting in touch through our website. Just a quick note to say your message arrived safely.',
+  '',
+  "We'll read it properly and get back to you within two working days. If you'd like to add anything in the meantime, such as what you have in mind, your timeline or where you're based, simply reply to this email.",
+  '',
+  'Speak soon,',
+  'The ASAKPNS team',
+  'asakpns.com',
+].join('\n');
+
+const CONFIRM_HTML = `<html><body style="margin:0;padding:24px 12px;background:#F4F6FB;font-family:Arial,Helvetica,sans-serif;color:#0E1633">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#FFFFFF;border-radius:12px;border:1px solid #DDE3F0">
+<tr><td style="padding:28px 32px 8px"><img src="https://asakpns.com/email-logo.png" width="184" height="40" alt="ASAKPNS" style="display:block;border:0"></td></tr>
+<tr><td style="padding:12px 32px 24px;font-size:15px;line-height:1.6;color:#0E1633">
+<p style="margin:0 0 14px">Hi,</p>
+<p style="margin:0 0 14px">Thanks for getting in touch through our website. Just a quick note to say your message arrived safely.</p>
+<p style="margin:0 0 14px">We'll read it properly and get back to you within two working days. If you'd like to add anything in the meantime, such as what you have in mind, your timeline or where you're based, simply reply to this email.</p>
+<p style="margin:0">Speak soon,<br>The ASAKPNS team</p>
+</td></tr>
+<tr><td style="padding:16px 32px 20px;border-top:1px solid #DDE3F0;font-size:13px;color:#47506B">Trust &middot; Transparency &middot; Security &nbsp;|&nbsp; <a href="https://asakpns.com" style="color:#0A4BF7;text-decoration:none">asakpns.com</a></td></tr>
+</table>
+</body></html>`;
+
+async function sendConfirmation(env, visitorEmail) {
+  const from = env.SMTP_USER;
+  const message = buildMessage({
+    from,
+    fromName: 'ASAKPNS',
+    to: visitorEmail,
+    subject: 'Thanks for contacting ASAKPNS',
+    text: CONFIRM_TEXT,
+    html: CONFIRM_HTML,
+    domain: 'asakpns.com',
+    extraHeaders: ['Auto-Submitted: auto-replied'],
+  });
+  await sendMail({
+    host: env.SMTP_HOST || 'smtp.migadu.com',
+    port: Number(env.SMTP_PORT || 465),
+    secure: env.SMTP_TLS !== 'off',
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASSWORD,
+    from,
+    to: visitorEmail,
+    message,
+    heloName: 'asakpns.com',
+  });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === '/api/contact') {
       if (request.method !== 'POST') return json(405, { ok: false, error: 'Method not allowed' });
-      return handleContact(request, env);
+      return handleContact(request, env, ctx);
     }
     return env.ASSETS.fetch(request);
   },

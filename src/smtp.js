@@ -23,9 +23,10 @@ function wrap76(b64) {
   return b64.replace(/.{1,76}/g, '$&\r\n');
 }
 
-// Build a plain-text message. Body is base64-encoded, so no dot-stuffing or
-// line-length issues; header values must already be free of CR/LF.
-export function buildMessage({ from, fromName, to, replyTo, subject, text, domain }) {
+// Build a message: plain text, or plain text + HTML (multipart/alternative).
+// Bodies are base64-encoded, so no dot-stuffing or line-length issues;
+// header values must already be free of CR/LF.
+export function buildMessage({ from, fromName, to, replyTo, subject, text, html, domain, extraHeaders = [] }) {
   const id = `${crypto.randomUUID()}@${domain}`;
   const headers = [
     `From: ${encodeHeader(fromName)} <${from}>`,
@@ -34,11 +35,23 @@ export function buildMessage({ from, fromName, to, replyTo, subject, text, domai
     `Subject: ${encodeHeader(subject)}`,
     `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
     `Message-ID: <${id}>`,
+    ...extraHeaders,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
   ].filter(Boolean);
-  return `${headers.join('\r\n')}\r\n\r\n${wrap76(base64Utf8(text))}`;
+  if (!html) {
+    headers.push('Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64');
+    return `${headers.join('\r\n')}\r\n\r\n${wrap76(base64Utf8(text))}`;
+  }
+  const boundary = `asakpns-${crypto.randomUUID()}`;
+  headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
+  const part = (type, body) => [
+    `--${boundary}`,
+    `Content-Type: ${type}; charset=utf-8`,
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrap76(base64Utf8(body)),
+  ].join('\r\n');
+  return `${headers.join('\r\n')}\r\n\r\n${part('text/plain', text)}\r\n${part('text/html', html)}\r\n--${boundary}--`;
 }
 
 export async function sendMail({ host, port, secure = true, user, pass, from, to, message, heloName, timeoutMs = 15000 }) {
