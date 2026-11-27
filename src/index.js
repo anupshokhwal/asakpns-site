@@ -197,6 +197,12 @@ async function sendConfirmation(env, visitorEmail) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // One address for search engines: send www.asakpns.com to asakpns.com
+    // (permanent redirect, same path and query). Form posts are left alone.
+    if (url.hostname === 'www.asakpns.com' && (request.method === 'GET' || request.method === 'HEAD')) {
+      url.hostname = 'asakpns.com';
+      return Response.redirect(url.toString(), 301);
+    }
     if (url.pathname === '/api/contact') {
       if (request.method !== 'POST') return json(405, { ok: false, error: 'Method not allowed' });
       return handleContact(request, env, ctx);

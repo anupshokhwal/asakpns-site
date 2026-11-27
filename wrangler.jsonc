@@ -6,7 +6,10 @@
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./public",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // Run the Worker before serving files, so www.asakpns.com can be
+    // redirected to asakpns.com (src/index.js).
+    "run_worker_first": true
   },
   "observability": { "enabled": true },
   // Not secret. Secrets (TURNSTILE_SECRET, SMTP_PASSWORD) are set in the
